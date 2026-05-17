@@ -1,0 +1,21 @@
+# Claude Code working artefacts — never commit these.
+# CLAUDE.md is local project context; plans/notes/scratchpads are session-scoped.
+CLAUDE.md
+**/CLAUDE.md
+PLAN.md
+**/PLAN.md
+NOTES.md
+**/NOTES.md
+.claude-plans/
+**/.claude-plans/
+.claude-notes/
+**/.claude-notes/
+
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Python
+__pycache__/
+**/__pycache__/
+*.pyc
