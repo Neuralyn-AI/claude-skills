@@ -13,12 +13,12 @@ bottom.
 
 | Field | Value |
 |---|---|
-| Category slug | `<from portal-config.md>` |
+| Category slug | `<from ../references/portal-config.md>` |
 | Article slug (stem) | `<lowercase-hyphenated>` |
-| Persona | `<id from portal-config.md personas>` |
+| Persona | `<id from ../references/portal-config.md personas>` |
 | Article type | `<step-by-step | troubleshooting | conceptual | reference>` |
-| Publishing flow | `<draft → review → publish | publish directly>` (see publishing-rules.md) |
-| Output language | `<defaults to portal-config.md default_locale>` |
+| Publishing flow | `<draft → review → publish | publish directly>` (see ../references/publishing-rules.md) |
+| Output language | `<defaults to ../references/portal-config.md default_locale>` |
 
 ## Code recon — where to look
 
@@ -38,7 +38,7 @@ cite each technical claim from there with `<!-- src: path:line -->`.
 ## Walkthrough in the sandbox
 
 Pre-condition: the operator's sandbox is in the seed state declared in
-`portal-config.md`, and the skill is logged in via Playwright MCP as the
+`../references/portal-config.md`, and the skill is logged in via Playwright MCP as the
 sandbox account.
 
 ### Step 1 — <action>
@@ -65,10 +65,10 @@ Source: `<which step's raw capture, or a dedicated capture>`. Crop to
 
 ## Article structure
 
-Follow the matching template in `style-guide.md` (step-by-step,
+Follow the matching template in `../references/style-guide.md` (step-by-step,
 troubleshooting, or conceptual). The skill renders the final article in
 `drafts/<slug>/article.md` keeping evidence comments. Strip them at
-publish time per `publishing-rules.md`.
+publish time per `../references/publishing-rules.md`.
 
 Suggested outline for this playbook:
 

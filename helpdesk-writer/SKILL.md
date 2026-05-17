@@ -24,7 +24,7 @@ Requests to write, update, or draft:
 
 - **Playwright MCP** installed: `claude mcp add playwright npx @playwright/mcp@latest`
 - **A helpdesk transport** available — an MCP server or an HTTP API the
-  operator has chosen. See `helpdesk-platforms.md` for supported adapters.
+  operator has chosen. See `references/helpdesk-platforms.md` for supported adapters.
   Chatwoot MCP is the default used during development.
 - Product repositories cloned locally (backend, frontend, any other relevant
   repos).
@@ -83,7 +83,7 @@ If the article type is obvious from the request, infer instead of asking.
 Treat secrets carefully: do not echo passwords or tokens back in chat; if you
 must reference them, refer by name.
 
-### 2. Code recon (read `code-recon.md`)
+### 2. Code recon (read `references/code-recon.md`)
 
 Before touching the UI, recon the code:
 
@@ -103,7 +103,7 @@ Before touching the UI, recon the code:
 If the feature has no corresponding code, **warn the user and do not
 invent**.
 
-### 3. UI walkthrough (read `ui-walkthrough.md` and `screenshot-conventions.md`)
+### 3. UI walkthrough (read `references/ui-walkthrough.md` and `references/screenshot-conventions.md`)
 
 Log into the sandbox via Playwright MCP using credentials from the env file.
 For each step of the article outline:
@@ -118,7 +118,7 @@ If the UI contradicts the code (for example: the code allows up to 100 items
 but the UI displays "max. 50"), **stop and report to the user**. It may be a
 bug, a double validation, or stale documentation. Do not silently pick a side.
 
-### 4. Image post-processing (read `screenshot-conventions.md`)
+### 4. Image post-processing (read `references/screenshot-conventions.md`)
 
 Run `scripts/annotate.py` to apply the right annotation for each step:
 
@@ -131,7 +131,7 @@ Run `scripts/annotate.py` to apply the right annotation for each step:
 
 Save the processed images to `drafts/<slug>/assets/step-NN.png`.
 
-### 5. Article writing (read `style-guide.md`)
+### 5. Article writing (read `references/style-guide.md`)
 
 Compose the markdown following the standard structure for the article type.
 Non-negotiable rules:
@@ -152,7 +152,7 @@ Show the draft in chat (rendered markdown + list of generated screenshots).
 
 If the user requests changes, redo the relevant steps and show again.
 
-### 7. Publication (read `publishing-rules.md` and `helpdesk-platforms.md`)
+### 7. Publication (read `references/publishing-rules.md` and `references/helpdesk-platforms.md`)
 
 Based on the article type, choose the mode (draft vs. publish directly).
 Before upload, **strip every evidence HTML comment** from the final markdown.
@@ -165,13 +165,13 @@ slug, category, body (cleaned markdown), meta description, image attachments.
 
 | File | When to read |
 |---|---|
-| `code-recon.md` | Before step 2 |
-| `ui-walkthrough.md` | Before step 3 |
-| `screenshot-conventions.md` | Steps 3 and 4 |
-| `style-guide.md` | Step 5 |
-| `helpdesk-platforms.md` | Steps 1 and 7 — platform adapters + generic publishing conventions (slug, meta, "see also") |
-| `portal-config.md` | Step 1 — shape of the operator's portal config; what to ask when none exists |
-| `publishing-rules.md` | Step 7 |
+| `references/code-recon.md` | Before step 2 |
+| `references/ui-walkthrough.md` | Before step 3 |
+| `references/screenshot-conventions.md` | Steps 3 and 4 |
+| `references/style-guide.md` | Step 5 |
+| `references/helpdesk-platforms.md` | Steps 1 and 7 — platform adapters + generic publishing conventions (slug, meta, "see also") |
+| `references/portal-config.md` | Step 1 — shape of the operator's portal config; what to ask when none exists |
+| `references/publishing-rules.md` | Step 7 |
 | `playbooks/*.md` | When the user requests an article whose topic already has a playbook |
 | `examples/*.md` | For reference of the final format |
 

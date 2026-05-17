@@ -57,15 +57,15 @@ reader will see and what to do.>
 
 This file is the canonical shape of a finished step-by-step article in
 this skill. Use the same structure for new articles. Variants for
-troubleshooting and conceptual articles live in `style-guide.md`.
+troubleshooting and conceptual articles live in `../references/style-guide.md`.
 
 Notes for whoever writes a real article using this template:
 
 - Replace every `<placeholder>` with concrete content from the recon and
   the walkthrough.
 - Keep every evidence comment (`<!-- src: path:line -->`) until publish
-  time. `publishing-rules.md` strips them in the final upload payload.
+  time. `../references/publishing-rules.md` strips them in the final upload payload.
 - Images live in `drafts/<slug>/assets/`. The local paths in the
   markdown are substituted with public URLs by the helpdesk adapter at
-  publish time — see `helpdesk-platforms.md`.
+  publish time — see `../references/helpdesk-platforms.md`.
 - Cover image is always `assets/cover.png`, 1280×640, no annotations.

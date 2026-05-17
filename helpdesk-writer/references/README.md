@@ -43,7 +43,7 @@ chmod 600 ~/.helpdesk-writer.env
 
 # 5. Describe your helpdesk portal (categories, glossary, personas)
 mkdir -p ~/.helpdesk-writer
-# Copy the schema from portal-config.md and fill it in:
+# Copy the schema from references/portal-config.md and fill it in:
 $EDITOR ~/.helpdesk-writer/portal.md
 ```
 
@@ -76,20 +76,22 @@ The skill never publishes without a human review gate.
 
 ```
 helpdesk-writer/
-├── SKILL.md                   # entry point; master workflow
-├── code-recon.md              # how to extract truth from a codebase
-├── ui-walkthrough.md          # Playwright MCP + sandbox conventions
-├── screenshot-conventions.md  # framing, naming, annotation types
-├── style-guide.md             # voice rules; per-project overridable
-├── helpdesk-platforms.md      # adapter specs + universal conventions
-├── portal-config.md           # shape of the operator's portal config
-├── publishing-rules.md        # draft vs. publish + pre-flight checks
+├── SKILL.md                       # entry point; master workflow (only .md at root)
+├── references/
+│   ├── README.md                  # this file — install + usage
+│   ├── code-recon.md              # how to extract truth from a codebase
+│   ├── ui-walkthrough.md          # Playwright MCP + sandbox conventions
+│   ├── screenshot-conventions.md  # framing, naming, annotation types
+│   ├── style-guide.md             # voice rules; per-project overridable
+│   ├── helpdesk-platforms.md      # adapter specs + universal conventions
+│   ├── portal-config.md           # shape of the operator's portal config
+│   └── publishing-rules.md        # draft vs. publish + pre-flight checks
 ├── scripts/
-│   └── annotate.py            # Pillow-based screenshot annotator
+│   └── annotate.py                # Pillow-based screenshot annotator
 ├── playbooks/
-│   └── _template.md           # skeleton for a reusable per-topic playbook
+│   └── _template.md               # skeleton for a reusable per-topic playbook
 └── examples/
-    └── _template.md           # canonical shape of a finished article
+    └── _template.md               # canonical shape of a finished article
 ```
 
 ## Principles
@@ -109,11 +111,11 @@ The skill is designed to be edited by the teams that install it.
 
 - Add a new article topic → drop a playbook in `playbooks/` based on
   `_template.md`.
-- Adjust the voice → edit `style-guide.md`.
+- Adjust the voice → edit `references/style-guide.md`.
 - Add a new helpdesk platform → add an adapter doc next to
-  `helpdesk-platforms.md` (see "Adding a new adapter" in that file).
+  `references/helpdesk-platforms.md` (see "Adding a new adapter" in that file).
 - Change the screenshot annotation style → edit
-  `screenshot-conventions.md` and the defaults in `scripts/annotate.py`.
+  `references/screenshot-conventions.md` and the defaults in `scripts/annotate.py`.
 
 The portal-specific configuration (categories, glossary, personas) lives
 in the operator's `~/.helpdesk-writer/portal.md`, never in the skill
