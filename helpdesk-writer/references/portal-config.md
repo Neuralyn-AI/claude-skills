@@ -103,6 +103,30 @@ Each persona declares an `id`, a one-line description, and a `register`.
 The briefing step picks one persona for each article; the style guide
 applies the matching register.
 
+The skill ships three **default personas** that work for most products.
+When the operator's portal config has no `personas:` block, the briefing
+falls back to this set. When the operator declares `personas:`, the
+defaults are still available *in addition* unless explicitly disabled
+with `disable_default_personas: true` at the portal level.
+
+```yaml
+# Defaults (also available when the operator hasn't declared personas)
+personas:
+  - id: end-user
+    description: Non-technical user of the product. Just wants the task done.
+    register: informal-second-person
+  - id: power-user
+    description: Uses the product daily. Expects efficiency over hand-holding.
+    register: informal-second-person
+  - id: developer
+    description: Integrating via API or SDK. Tolerates jargon and terms of art.
+    register: technical-second-person
+```
+
+The operator adds more personas in their portal config by appending
+entries with the same shape. Operator-declared ids take precedence over
+default ids of the same name.
+
 Available registers:
 
 - `informal-second-person` — "you", contractions allowed, plain words.

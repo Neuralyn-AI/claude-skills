@@ -76,8 +76,10 @@ Then, in a single round, gather:
   to describe the portal using the schema in `references/portal-config.md`
   (portal identity, categories, tag taxonomy, personas, glossary, output
   language). Offer to persist the result.
-- **Target persona.** Pick from the personas the operator declared in the
-  portal config; ask if none are declared.
+- **Target persona.** Pick from the operator's personas plus the three
+  defaults the skill ships with (`end-user`, `power-user`, `developer`)
+  — see `references/portal-config.md` for the full shape. Ask the user
+  if no persona obviously matches.
 - **New article or update?** If update, the existing article id or slug.
 - **Any missing runtime configuration** — sandbox credentials, repo
   paths, helpdesk transport choice — that step 2 and step 3 will need.
