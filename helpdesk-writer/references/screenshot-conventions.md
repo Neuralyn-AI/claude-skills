@@ -11,25 +11,57 @@ Annotation commands are run by `scripts/annotate.py`.
 Inside `drafts/<slug>/`:
 
 ```
-raw/      # untouched screenshots from Playwright. Never overwrite.
-assets/   # processed/annotated screenshots — the ones shipped with the article.
+raw/      # untouched screenshots from Playwright. Never overwrite. PNG.
+thumbs/   # downscaled WebP renderings for the agent to analyse. Cheap.
+assets/   # processed/annotated screenshots shipped with the article. WebP.
 ```
 
-Filenames in both directories use this shape:
+Filenames keep the same step prefix across all three folders, only the
+extension changes:
 
 ```
-step-NN-short-description.png
-
-Examples:
-step-01-dashboard-home.png
-step-02-new-customer-button.png
-step-03-form-filled.png
+raw/step-01-dashboard-home.png         # captured by Playwright
+thumbs/step-01-dashboard-home.webp     # 1024 px, q75 — what the agent reads
+assets/step-01-dashboard-home.webp     # annotated, q90 — what the reader sees
 ```
 
 Two-digit step numbers (`01`, `02`, …) keep the file list sorted. The
-annotated version in `assets/` keeps the same filename as its `raw/`
-counterpart — never overwrite the raw file, you may need to reprocess it
-with a different annotation later.
+annotated version in `assets/` mirrors the `raw/` filename — never overwrite
+the raw file, you may need to reprocess it with a different annotation
+later. The thumb in `thumbs/` is a cache: regenerate freely from the raw.
+
+## Format and quality budget
+
+Three different jobs, three different settings.
+
+| Job | Folder | Format | Width | Quality | Why |
+|---|---|---|---|---|---|
+| Source of truth from Playwright | `raw/` | PNG lossless | Native (e.g. 2560×1600 at DPR 2) | — | Single authoritative capture; reprocessable. |
+| Agent analysis (what the model "sees" to decide what to do) | `thumbs/` | WebP | ≤ 1024 px wide | 75 | UI text stays legible; tokens drop ~6× vs. raw. |
+| Final article image (what the reader sees) | `assets/` | WebP | Native, or cropped per zoom-in conventions | 90 | Near-lossless visual quality; markedly smaller than PNG. |
+
+WebP supports alpha, so annotated overlays (numbers, arrows, boxes) compose
+cleanly. For detail crops where text legibility matters more than file size,
+override `--max-width` upward (1280–1600 px) when generating the thumb.
+
+`scripts/annotate.py` infers the format from the `--out` suffix:
+
+- `--out path.webp` → WebP at the requested `--quality` (default 90 for
+  annotated assets, 75 for thumbnails).
+- `--out path.png`  → PNG lossless. Use only when something downstream
+  cannot accept WebP.
+- `--out path.jpg`  → JPEG (alpha flattened to RGB).
+
+## Generate the thumb right after capture
+
+Step 3 (UI walkthrough) sequence per screen:
+
+1. `browser_take_screenshot` → `raw/step-NN-<short>.png`
+2. `python scripts/annotate.py thumbnail --in raw/step-NN-<short>.png --out thumbs/step-NN-<short>.webp`
+3. **Read the thumb, not the raw**, when deciding what to do next.
+
+Annotating into `assets/` happens later in step 4. The thumb is purely for
+the agent — readers never see it, so it does not need annotation.
 
 ## Annotation types and when to use each
 
@@ -54,13 +86,13 @@ capture. After the screenshot, call `browser_remove_highlight` to clean up.
 ```bash
 python scripts/annotate.py number \
   --in raw/step-02-form.png \
-  --out assets/step-02-form.png \
+  --out assets/step-02-form.webp \
   --xy 250,180 --n 1
 
 # Add more numbers to the same file, overwriting it in assets/:
 python scripts/annotate.py number \
-  --in assets/step-02-form.png \
-  --out assets/step-02-form.png \
+  --in assets/step-02-form.webp \
+  --out assets/step-02-form.webp \
   --xy 250,280 --n 2
 ```
 
@@ -79,7 +111,7 @@ toggles, status icons, badges, single numeric values.
 ```bash
 python scripts/annotate.py crop \
   --in raw/step-04-toggle.png \
-  --out assets/step-04-toggle.png \
+  --out assets/step-04-toggle.webp \
   --bbox 1080,420,1250,490 \
   --padding 40
 ```
@@ -89,8 +121,8 @@ emphasise something inside the crop, chain with a box:
 
 ```bash
 python scripts/annotate.py box \
-  --in assets/step-04-toggle.png \
-  --out assets/step-04-toggle.png \
+  --in assets/step-04-toggle.webp \
+  --out assets/step-04-toggle.webp \
   --bbox 80,30,180,90
 ```
 
@@ -120,7 +152,7 @@ visible gives the screenshot a sense of realism.
 ```bash
 python scripts/annotate.py blur \
   --in raw/step-05-profile.png \
-  --out assets/step-05-profile.png \
+  --out assets/step-05-profile.webp \
   --bbox 150,300,500,330
 ```
 
@@ -135,7 +167,7 @@ articles ("what does feature X do to your data?").
 ```bash
 python scripts/annotate.py composite \
   --in raw/before.png,raw/after.png \
-  --out assets/comparison.png \
+  --out assets/comparison.webp \
   --labels "Before,After"
 ```
 
@@ -149,11 +181,11 @@ Every article has a cover: a screenshot of the feature's main screen,
 ```bash
 python scripts/annotate.py crop \
   --in raw/cover-raw.png \
-  --out assets/cover.png \
+  --out assets/cover.webp \
   --bbox 0,80,1280,720
 ```
 
-Filename is always `cover.png`.
+Filename is always `cover.webp`.
 
 ## Test data in screenshots
 

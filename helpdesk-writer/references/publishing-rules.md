@@ -30,7 +30,7 @@ Run every check. If any fails, fix and re-run before publishing.
    `grep -n '<!--' article.md` must return zero lines.
 2. **All screenshots are processed** (referenced from `assets/`, not
    `raw/`).
-3. **Sensitive data is blurred.** Open each `assets/*.png` and scan it
+3. **Sensitive data is blurred.** Open each `assets/*.webp` and scan it
    visually — automated checks miss things.
 4. **Glossary respected.** For every term the operator's portal config
    lists under `avoid:`, grep the article: `grep -in "<avoid-term>"
@@ -43,7 +43,7 @@ Run every check. If any fails, fix and re-run before publishing.
 7. **Links resolve.** Internal "see also" links use the slug pattern
    declared in the portal config and point at articles that actually
    exist (or will exist — flag the dependency to the user).
-8. **Cover image present** at `assets/cover.png`.
+8. **Cover image present** at `assets/cover.webp`.
 
 ## Calling the transport
 
@@ -58,7 +58,7 @@ common fields the workflow always supplies:
 - `meta.description` (≤160 chars, see `helpdesk-platforms.md`)
 - `meta.tags` (per the operator's tag taxonomy)
 - `status` — `draft` or `published`, per the decision matrix
-- `cover_image` — path to `assets/cover.png`
+- `cover_image` — path to `assets/cover.webp`
 - `inline_assets` — paths to every image referenced in the markdown
 
 If the platform requires assets to be uploaded ahead of the article

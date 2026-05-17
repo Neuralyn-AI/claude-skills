@@ -97,7 +97,7 @@ Short bullet list of prerequisites. Skip the section if there are none.
 
 Lead-in text (1–2 sentences).
 
-![alt text](assets/step-01.png)
+![alt text](assets/step-01.webp)
 
 Closing sentence if needed (1 sentence).
 
@@ -211,4 +211,4 @@ Typical examples:
 
 Every article has a cover image: a 1280×640 screenshot of the feature's
 main screen, **without annotations**. Details in
-`screenshot-conventions.md`. Filename is always `cover.png`.
+`screenshot-conventions.md`. Filename is always `cover.webp`.

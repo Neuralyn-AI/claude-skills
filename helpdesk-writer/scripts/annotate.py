@@ -9,19 +9,26 @@ Subcommands:
     crop        Crop a region with surrounding padding (zoom-in)
     blur        Gaussian blur over a region (mask sensitive data)
     composite   Side-by-side composition (before/after)
+    thumbnail   Downscale + re-encode for cheap agent consumption
 
 Each subcommand takes --in and --out. Chain operations by piping the
 output of one into the input of the next:
-    --in raw/x.png --out assets/x.png
-    --in assets/x.png --out assets/x.png  (overwrites)
+    --in raw/x.png --out assets/x.webp
+    --in assets/x.webp --out assets/x.webp  (overwrites)
+
+Output format is inferred from the --out suffix:
+    .webp  → WebP (default for annotated assets and thumbs)
+    .png   → PNG lossless (use only for raw captures)
+    .jpg   → JPEG (fallback when WebP is unavailable downstream)
 
 Examples:
-    python annotate.py number --in a.png --out b.png --xy 200,300 --n 1
-    python annotate.py arrow --in a.png --out b.png --from 100,100 --to 200,200
-    python annotate.py box --in a.png --out b.png --bbox 100,100,500,400
-    python annotate.py crop --in a.png --out b.png --bbox 100,100,500,400 --padding 30
-    python annotate.py blur --in a.png --out b.png --bbox 100,100,500,400
-    python annotate.py composite --in a.png,b.png --out z.png --labels "Before,After"
+    python annotate.py number --in a.png --out b.webp --xy 200,300 --n 1
+    python annotate.py arrow --in a.png --out b.webp --from 100,100 --to 200,200
+    python annotate.py box --in a.png --out b.webp --bbox 100,100,500,400
+    python annotate.py crop --in a.png --out b.webp --bbox 100,100,500,400 --padding 30
+    python annotate.py blur --in a.png --out b.webp --bbox 100,100,500,400
+    python annotate.py composite --in a.png,b.png --out z.webp --labels "Before,After"
+    python annotate.py thumbnail --in raw/x.png --out thumbs/x.webp --max-width 1024 --quality 75
 """
 
 import argparse
@@ -97,10 +104,25 @@ def _open_rgba(path: Path) -> Image.Image:
     return img
 
 
-def _save(img: Image.Image, path: Path) -> None:
+def _save(img: Image.Image, path: Path, quality: int = 90) -> None:
+    """Save img to disk, picking the format from the path suffix.
+
+    - .webp → WebP at the requested quality (alpha preserved). Default for
+      annotated assets (article output) and thumbs (agent consumption).
+    - .png  → PNG lossless. Use only for raw captures or when WebP is not an
+      option downstream.
+    - .jpg / .jpeg → JPEG (alpha is flattened to RGB).
+    """
     path.parent.mkdir(parents=True, exist_ok=True)
-    # PNG keeps quality lossless — always PNG for documentation
-    img.save(path, format="PNG", optimize=True)
+    suffix = path.suffix.lower()
+    if suffix == ".webp":
+        img.save(path, format="WEBP", quality=quality, method=6)
+    elif suffix in (".jpg", ".jpeg"):
+        if img.mode == "RGBA":
+            img = img.convert("RGB")
+        img.save(path, format="JPEG", quality=quality, optimize=True)
+    else:
+        img.save(path, format="PNG", optimize=True)
 
 
 # ---------------------------------------------------------------------------
@@ -315,6 +337,23 @@ def op_composite(
     return canvas
 
 
+def op_thumbnail(
+    img: Image.Image,
+    max_width: int = 1024,
+) -> Image.Image:
+    """Downscale to a maximum width, preserving aspect ratio.
+
+    Used to produce small WebP renderings of raw captures for the agent to
+    analyse. Cheaper to send to the model than a 2560×1600 PNG. If the image
+    is already narrower than max_width, returns it unchanged.
+    """
+    w, h = img.size
+    if w <= max_width:
+        return img
+    new_h = int(round(h * max_width / w))
+    return img.resize((max_width, new_h), Image.LANCZOS)
+
+
 # ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
@@ -374,6 +413,26 @@ def main() -> int:
         help="Comma-separated labels (same count as inputs)"
     )
     p.add_argument("--gap", type=int, default=24)
+    p.add_argument(
+        "--quality", type=int, default=90,
+        help="Quality for lossy output formats (WebP/JPEG); default 90"
+    )
+
+    # thumbnail
+    p = sub.add_parser(
+        "thumbnail",
+        help="Downscale + re-encode for cheap agent consumption",
+    )
+    p.add_argument("--in", dest="inp", required=True, type=Path)
+    p.add_argument("--out", dest="out", required=True, type=Path)
+    p.add_argument(
+        "--max-width", dest="max_width", type=int, default=1024,
+        help="Maximum output width in px; default 1024"
+    )
+    p.add_argument(
+        "--quality", type=int, default=75,
+        help="Quality for lossy output formats (WebP/JPEG); default 75"
+    )
 
     args = parser.parse_args()
 
@@ -387,11 +446,12 @@ def main() -> int:
             )
             return 2
         result = op_composite(imgs, labels=labels, gap=args.gap)
-        _save(result, args.out)
+        _save(result, args.out, quality=args.quality)
         print(f"ok {args.out}")
         return 0
 
     img = _open_rgba(args.inp)
+    quality = 90  # default for annotated assets
 
     if args.cmd == "number":
         result = op_number(img, args.xy, args.n, radius=args.radius)
@@ -403,11 +463,14 @@ def main() -> int:
         result = op_crop(img, args.bbox, padding=args.padding)
     elif args.cmd == "blur":
         result = op_blur(img, args.bbox, radius=args.radius)
+    elif args.cmd == "thumbnail":
+        result = op_thumbnail(img, max_width=args.max_width)
+        quality = args.quality
     else:
         sys.stderr.write(f"Unknown command: {args.cmd}\n")
         return 2
 
-    _save(result, args.out)
+    _save(result, args.out, quality=quality)
     print(f"ok {args.out}")
     return 0
 

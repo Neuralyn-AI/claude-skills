@@ -17,7 +17,7 @@ specific.>
 <One or two sentences leading into the screenshot. Describe what the
 reader will see and what to do.>
 
-![<alt text describing what the screenshot shows>](assets/step-01-<short>.png)
+![<alt text describing what the screenshot shows>](assets/step-01-<short>.webp)
 
 <Closing sentence only if needed.>
 
@@ -25,7 +25,7 @@ reader will see and what to do.>
 
 <lead-in>
 
-![<alt>](assets/step-02-<short>.png)
+![<alt>](assets/step-02-<short>.webp)
 
 > **<Inline note about a non-obvious detail.>** <Plain-language
 > explanation of a constraint, with the evidence comment.>
@@ -35,13 +35,13 @@ reader will see and what to do.>
 
 <lead-in>
 
-![<alt>](assets/step-03-<short>.png)
+![<alt>](assets/step-03-<short>.webp)
 
 ## You're done
 
 <Confirmation that the action succeeded — what the reader should see now.>
 
-![<alt>](assets/step-N-confirmation.png)
+![<alt>](assets/step-N-confirmation.webp)
 
 ## See also
 
@@ -68,4 +68,4 @@ Notes for whoever writes a real article using this template:
 - Images live in `drafts/<slug>/assets/`. The local paths in the
   markdown are substituted with public URLs by the helpdesk adapter at
   publish time — see `../references/helpdesk-platforms.md`.
-- Cover image is always `assets/cover.png`, 1280×640, no annotations.
+- Cover image is always `assets/cover.webp`, 1280×640, no annotations.

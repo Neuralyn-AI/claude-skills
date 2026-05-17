@@ -1,14 +1,14 @@
 ---
 name: helpdesk-writer
-description: Writes user-facing helpdesk articles for a SaaS product by cross-referencing three sources of truth — the product's source code (backend + frontend), the live UI driven via Playwright MCP using real account credentials, and a voice/style guide — and publishes the draft to a helpdesk platform via MCP or HTTP. Use when the user asks to create, update, or draft documentation, a tutorial, a how-to, a step-by-step guide, or an article explaining a feature, error message, format, limit, or workflow. The skill captures annotated screenshots and never publishes without explicit human review.
+description: Use when the user asks to write, update, or draft a helpdesk article, tutorial, how-to, step-by-step guide, or documentation for a product feature, error message, format, limit, or workflow. Guides the full lifecycle: briefing → project selection → code recon → article writing → human approval → publication.
 ---
 
 # Helpdesk Writer
 
 Produces helpdesk articles backed by technically verified information: it
 cross-checks the product's source code, the live UI in a sandbox account, and
-a voice guide before writing a single line. Publishes a draft to the
-configured helpdesk platform.
+a voice guide before writing a single line. Publishes only after explicit human
+approval and only to a transport the user designates at that moment.
 
 ## When to activate
 
@@ -23,185 +23,273 @@ Requests to write, update, or draft:
 ## Expected environment prerequisites
 
 - **Playwright MCP** installed: `claude mcp add playwright npx @playwright/mcp@latest`
-- **A helpdesk transport** available — an MCP server or an HTTP API the
-  operator has chosen. See `references/helpdesk-platforms.md` for supported adapters.
-  Chatwoot MCP is the default used during development.
-- Product repositories cloned locally (backend, frontend, any other relevant
-  repos).
+- Product repositories cloned locally (backend, frontend, any other relevant repos).
 - Python 3 with Pillow: `pip install Pillow`
 
-The skill itself ships **no product-specific configuration**. Repo paths,
-sandbox credentials, the chosen helpdesk transport, and the helpdesk portal
-structure (categories, slug conventions, tag taxonomy, URL pattern) all come
-from the operator — either persisted in a config file or provided at runtime
-in the conversation. See "Runtime configuration discovery" below.
-
-## Runtime configuration discovery
-
-Before doing any work, resolve configuration in this order. Stop at the first
-source that provides a given value.
-
-1. **Env / config file.** Default location: `~/.helpdesk-writer.env` for
-   simple key/value (sandbox URL, credentials, repo paths, transport choice,
-   output language) and `~/.helpdesk-writer/portal.md` for the richer
-   helpdesk portal structure. If the operator points you at different paths,
-   use those.
-2. **Runtime prompt.** For anything still missing, ask the user in the same
-   round as the briefing (step 1 below). Be specific about what you need and
-   why.
-3. **Persistence (optional).** After collecting values at runtime, offer to
-   save them to the config file so the next session does not re-ask. Do not
-   write secrets to disk without confirmation.
-
-Never hard-code credentials, repo paths, URLs, product names, portal slugs,
-or category lists anywhere in the skill source.
+The skill ships **no product-specific configuration**. Repo paths, sandbox
+credentials, the chosen helpdesk transport, and the helpdesk portal structure
+all come from the operator — either persisted in a project config file or
+provided at runtime.
 
 ## Master workflow
 
-For every article request, execute these steps in order. **Do not skip
-steps.** The hard rule: **no technical claim enters the article without
-traceable evidence — from the code or from the UI.**
+Execute these steps in order. **Do not skip steps.**
+Hard rule: **no technical claim enters the article without traceable evidence — from the code or from the UI.**
 
-### 1. Briefing
+---
 
-First, check `playbooks/` for a `.md` whose name or topic matches the
-request. If one exists, follow it instead of starting from scratch —
-playbooks encode the steps, recon hints, and screenshot plan for that
-topic.
+### Step 1 — Topic and language
 
-Then, in a single round, gather:
+Use `AskUserQuestion` (dialog) to collect:
 
-- **Article topic and target helpdesk category.** If no portal structure
-  is configured yet (see "Runtime configuration discovery"), ask the user
-  to describe the portal using the schema in `references/portal-config.md`
-  (portal identity, categories, tag taxonomy, personas, glossary, output
-  language). Offer to persist the result.
-- **Target persona.** Pick from the operator's personas plus the three
-  defaults the skill ships with (`end-user`, `power-user`, `developer`)
-  — see `references/portal-config.md` for the full shape. Ask the user
-  if no persona obviously matches.
-- **New article or update?** If update, the existing article id or slug.
-- **Any missing runtime configuration** — sandbox credentials, repo
-  paths, helpdesk transport choice — that step 2 and step 3 will need.
-  Collect everything in one round; do not interrupt the workflow later to
-  ask for a credential you could have asked for now.
+- **What the article is about** — free text (e.g. "How to register products").
+- **Article language** — offer choices based on any language already configured
+  in the active project, plus "Other".
 
-If the article type is obvious from the request, infer instead of asking.
-Treat secrets carefully: do not echo passwords or tokens back in chat; if
-you must reference them, refer by name.
+Do not ask anything else in this round. Steps 2–3 decide the rest.
 
-### 2. Code recon (read `references/code-recon.md`)
+---
 
-Before touching the UI, recon the code:
+### Step 2 — Project selection or setup
 
-- **Preflight.** For each configured target repo, read its `CLAUDE.md` (or
-  `AGENTS.md` / `GEMINI.md`) if present. These often describe architecture,
-  module layout, naming conventions, and sometimes the specific feature you
-  are documenting. Use them to scope the search instead of grepping the repo
-  from scratch. Be aware they can drift from code; verify any concrete
-  claim against the source.
-- Identify the relevant files (handlers, schemas, validators, error maps,
-  constants).
-- Extract: accepted formats, numeric limits, exhaustive list of possible
-  errors, defaults, conditional flows.
-- Save findings to `drafts/<slug>/recon.md` with `path:line` for every
-  piece of evidence.
+Look for a project config file at `~/.helpdesk-writer/projects.json`. Each entry holds:
 
-If the feature has no corresponding code, **warn the user and do not
-invent**.
+```json
+{
+  "name": "Project name",
+  "dir": "~/.helpdesk-writer/projects/<slug>/",
+  "repos": ["~/code/backend", "~/code/frontend"],
+  "sandbox": { "url": "https://sandbox.example.com", "credentials_ref": "env:SANDBOX_CREDS" },
+  "languages": ["pt-BR"],
+  "last_used": "2026-05-10"
+}
+```
 
-### 3. UI walkthrough (read `references/ui-walkthrough.md` and `references/screenshot-conventions.md`)
+**If one or more projects exist** — use `AskUserQuestion` to display them as
+options plus "Create new project". Pre-select the most recently used.
 
-Log into the sandbox via Playwright MCP using the credentials resolved per
-"Runtime configuration discovery". For each step of the article outline:
+**If no projects exist, or the user chooses "Create new project"** — run a
+short setup dialog (one `AskUserQuestion` call per question where options help;
+free-text otherwise):
 
-- Navigate to the screen
-- Capture a screenshot (full page or specific element, per convention)
-- For native annotations: use `browser_highlight` before the screenshot when
-  applicable
-- Save to `drafts/<slug>/raw/step-NN.png`
+A. Project name (free text).
+B. Git repository paths — one or more local paths, comma-separated.
+C. Sandbox URL + how to supply credentials (env variable name, or the user
+   will paste them now — never log secrets to disk without explicit consent).
 
-If the UI contradicts the code (for example: the code allows up to 100 items
-but the UI displays "max. 50"), **stop and report to the user**. It may be a
-bug, a double validation, or stale documentation. Do not silently pick a side.
+Save the new project to `~/.helpdesk-writer/projects.json` and create its
+working directory at `~/.helpdesk-writer/projects/<slug>/`.
 
-### 4. Image post-processing (read `references/screenshot-conventions.md`)
+All draft output, screenshots, and cached recon for this project live inside
+that directory. Cross-session Playwright storage state lives at
+`~/.helpdesk-writer/projects/<slug>/state/<sandbox>.json`.
 
-Run `scripts/annotate.py` to apply the right annotation for each step:
+---
 
-- **Red outline** (subtle overlay or native highlight): screen overview with a
-  highlighted element
-- **Numbered markers + arrows**: when a step has multiple sub-elements in
-  sequence
-- **Cropped zoom-in**: small details (toggles, icons, badges)
-- **Blur**: any time test data looks real (email, tax ID, customer name)
+### Step 3 — Code recon  (read `references/code-recon.md`)
 
-Save the processed images to `drafts/<slug>/assets/step-NN.png`.
+Now that we know the topic, scan only the relevant parts of the repositories.
 
-### 5. Article writing (read `references/style-guide.md`)
+- Use the topic from step 1 as a search scope: grep for relevant identifiers,
+  routes, schemas, validators, and constants.
+- For each target repo, read its `CLAUDE.md` / `AGENTS.md` if present — these
+  often describe the module layout and pinpoint the feature's location.
+- Extract: accepted formats, numeric limits, exhaustive error list, defaults,
+  conditional flows.
+- Summarise findings in `~/.helpdesk-writer/projects/<slug>/drafts/<article-slug>/recon.md`
+  with `path:line` for every piece of evidence.
 
-Compose the markdown following the standard structure for the article type.
+If the feature has no corresponding code, **warn the user and do not invent**.
+
+Do not re-read the whole repository in later steps — the recon summary is the
+single source of truth for subsequent steps. If a question arises, go back to
+the summary first; only re-query the repo if the summary is insufficient.
+
+---
+
+### Step 4 — UI walkthrough  (read `references/ui-walkthrough.md`, `references/runtime-state.md`, `references/screenshot-conventions.md`)
+
+Load cached Playwright storage state if it exists. Navigate to the sandbox and
+check the URL: if it matches the login pattern, replay the login flow and save
+the refreshed state.
+
+For each step of the article outline:
+
+- Navigate to the screen.
+- Capture raw screenshot; save to `drafts/<article-slug>/raw/step-NN-<short>.png`.
+- Generate a thumb for analysis:
+  `python scripts/annotate.py thumbnail --in raw/step-NN-<short>.png --out thumbs/step-NN-<short>.webp`
+  Read the thumb, not the raw — ~10× cheaper in tokens.
+- Append the step to `drafts/<article-slug>/trace.json` (schema in `references/runtime-state.md`).
+
+If the UI contradicts the code (e.g. code allows 100 items but UI shows "max 50"),
+**stop and report**. Do not silently pick a side.
+
+---
+
+### Step 5 — Output format
+
+Use `AskUserQuestion` (dialog) to ask what format the article should be saved / published in:
+
+- Markdown (`.md`)
+- HTML
+- Plain text (`.txt`)
+- Word (`.docx`)
+- PDF
+
+This determines how the final file is written in step 6.
+
+---
+
+### Step 6 — Image post-processing  (read `references/screenshot-conventions.md`)
+
+Run `scripts/annotate.py` over raw captures:
+
+- Red outline: screen overview with highlighted element.
+- Numbered markers + arrows: multiple sub-elements in sequence.
+- Cropped zoom-in: small details (toggles, icons, badges).
+- Blur: any time test data looks real (email, tax ID, name).
+
+Save processed images as WebP to `drafts/<article-slug>/assets/step-NN-<short>.webp`.
+
+---
+
+### Step 7 — Article writing  (read `references/style-guide.md`)
+
+Compose the article in the format selected in step 5, following the standard
+structure for the article type.
+
 Non-negotiable rules:
 
-- Write in the configured output language, addressing the reader directly
-  ("you")
+- Write in the language selected in step 1, addressing the reader as "you".
 - Every technical claim carries an HTML comment with its source:
-  `<!-- src: backend/api/products.ts:42 — limit 100 -->`
+  `<!-- src: backend/api/products.ts:42 — limit 100 -->`.
 - Every screenshot has text before (introduces what the reader will see) and
-  text after (what to do next)
-- Errors are explained as **what happened, why it happened, what to do** — in
-  that order
+  text after (what to do next).
+- Errors are explained as **what happened → why it happened → what to do**.
 
-### 6. Human review
+---
 
-Show the draft in chat (rendered markdown + list of generated screenshots).
-**Never publish directly.** Wait for explicit approval.
+### Step 8 — Human review
+
+Show the full draft in chat (rendered article + list of generated screenshots).
+**Never publish.** Wait for explicit approval.
 
 If the user requests changes, redo the relevant steps and show again.
 
-### 7. Publication (read `references/publishing-rules.md` and `references/helpdesk-platforms.md`)
+---
 
-Based on the article type, choose the mode (draft vs. publish directly).
-Before upload, **strip every evidence HTML comment** from the final markdown.
-Those comments are for audit, not for the reader.
+### Step 9 — Publication target  (read `references/publishing-rules.md`, `references/helpdesk-platforms.md`)
 
-Call the configured helpdesk transport (MCP server or HTTP API) with the
-canonical payload defined in `references/helpdesk-platforms.md` (title,
-slug, content, category, locale, status, description, tags, cover_image,
-inline_assets, associated_article).
+Only after the user approves the draft, ask where to publish.
+
+Use `AskUserQuestion` to ask how to publish:
+
+- **MCP server** already configured in Claude Code (user provides the server name).
+- **HTTP API** (user provides base URL + auth token — store credential ref, not the value).
+- **Save to file only** (no publishing; article is saved locally in the chosen format).
+
+**Do not pre-fill Chatwoot or any specific platform.** The user designates the
+transport at this point.
+
+---
+
+### Step 10 — Platform capability discovery
+
+Once the transport is available, probe it for publishing-related capabilities:
+
+- List available categories, folders, sections, or collections.
+- List available tags or labels.
+- Check for multi-locale / multi-language support.
+
+Summarise what you found. Do not ask the user to fill in a YAML schema — ask
+only about what the platform actually exposes and what the article needs.
+
+---
+
+### Step 11 — Metadata and placement
+
+Use `AskUserQuestion` dialogs (one question at a time, offering discovered
+options as choices) to collect:
+
+- Target category / section / folder — offer the list discovered in step 10.
+- Tags / labels — offer suggestions derived from the article topic + discovered taxonomy.
+- Publication status: draft or live.
+- Any other fields the platform requires (cover image, description, slug).
+
+---
+
+### Step 12 — Multi-language (optional)
+
+If the platform supports multiple locales, ask:
+
+> "Would you like to publish translations of this article?"
+
+If yes, use `AskUserQuestion` to let the user pick target languages (offer the
+locales the platform supports). Generate each translation (re-use the same
+recon and screenshots; rewrite the prose) and publish each locale.
+
+---
+
+### Step 13 — Publish
+
+Strip all evidence HTML comments from the final content. Upload via the
+configured transport using the canonical payload defined in
+`references/helpdesk-platforms.md`.
+
+---
+
+### Step 14 — Save preferences
+
+After a successful publication, offer to save:
+
+- The transport choice (MCP server name or HTTP API base URL) as the default
+  for this project.
+- The target category / section.
+- The publication language(s).
+
+Saved preferences are shown as pre-selected options the next time the user
+runs the skill for the same project.
+
+---
 
 ## Reference files
 
 | File | When to read |
 |---|---|
-| `references/code-recon.md` | Before step 2 |
-| `references/ui-walkthrough.md` | Before step 3 |
-| `references/screenshot-conventions.md` | Steps 3 and 4 |
-| `references/style-guide.md` | Step 5 |
-| `references/helpdesk-platforms.md` | Steps 1 and 7 — platform adapters + generic publishing conventions (slug, meta, "see also") |
-| `references/portal-config.md` | Step 1 — shape of the operator's portal config; what to ask when none exists |
-| `references/publishing-rules.md` | Step 7 |
-| `playbooks/*.md` | When the user requests an article whose topic already has a playbook |
-| `examples/*.md` | For reference of the final format |
+| `references/code-recon.md` | Before step 3 |
+| `references/ui-walkthrough.md` | Before step 4 |
+| `references/runtime-state.md` | Before step 4 — storage state, reusable flows, per-article trace |
+| `references/screenshot-conventions.md` | Steps 4 and 6 |
+| `references/style-guide.md` | Step 7 |
+| `references/helpdesk-platforms.md` | Steps 9 and 13 — platform adapters + publishing conventions |
+| `references/publishing-rules.md` | Steps 9 and 13 |
+| `playbooks/*.md` | When the user's topic matches an existing playbook |
+| `examples/*.md` | For reference of the final article format |
 
 ## Scripts
 
 - `scripts/annotate.py` — image annotations (number, arrow, box, crop, blur,
-  composite). Run `python scripts/annotate.py --help`.
+  composite) and `thumbnail` (downscale + WebP for cheap agent reads). Run
+  `python scripts/annotate.py --help`.
 
 ## Draft structure
 
 ```
-drafts/<slug>/
-├── recon.md              # code evidence (step 2)
-├── outline.md            # outline with steps (steps 1 + 2)
-├── raw/                  # raw screenshots from Playwright
-├── assets/               # annotated screenshots (final)
-└── article.md            # article markdown (with evidence comments)
+~/.helpdesk-writer/projects/<project-slug>/
+├── drafts/<article-slug>/
+│   ├── recon.md              # code evidence (step 3)
+│   ├── outline.md            # article outline
+│   ├── trace.json            # replayable Playwright record (step 4)
+│   ├── raw/                  # raw screenshots (PNG)
+│   ├── thumbs/               # downscaled WebP — what the agent reads
+│   ├── assets/               # annotated screenshots for article (WebP q90)
+│   └── article.<ext>         # final article in the chosen format
+└── state/<sandbox>.json      # shared Playwright storage state
 ```
 
-Keep the `drafts/<slug>/` folder even after publishing — it serves as history
-and as the source for future updates.
+Keep `drafts/<article-slug>/` even after publishing — it serves as history and
+as the source for future updates or translations.
 
 ## Principles
 
@@ -214,3 +302,5 @@ and as the source for future updates.
    instead of speculating.
 6. **Speak the user's language, not the developer's.** The final article
    must not read like a GitHub issue.
+7. **Ask only what is needed, only when it is needed.** Collect topic and
+   language first; platform details only after approval.

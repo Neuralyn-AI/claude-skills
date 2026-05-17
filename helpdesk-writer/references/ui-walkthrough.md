@@ -6,6 +6,8 @@ will back the article.
 
 This file describes the conventions for that session. Screenshot framing,
 annotation, and post-processing are in `screenshot-conventions.md`.
+Persisted session, reusable flows, and per-article traces are in
+`runtime-state.md` — read that before starting the walkthrough.
 
 ## Sandbox account guidance
 
@@ -29,19 +31,34 @@ Do not echo the credentials back in chat.
 
 ## Login flow
 
-Standard pattern when calling Playwright MCP. Adapt the selectors to the
-product's actual login page.
+Login is a **reusable flow** — `runtime-state.md` covers how it is stored
+and replayed. The short version:
 
-1. `browser_navigate` → `<SANDBOX_URL>/login`
-2. `browser_fill` on the email/username field → value from config
-3. `browser_fill` on the password field → value from config
-4. `browser_click` on the submit button
-5. `browser_wait_for` → a URL or element that proves the user is logged in
-   (e.g. dashboard URL pattern, profile menu)
+1. **Try the cached session first.** If
+   `~/.helpdesk-writer/state/<sandbox>.json` exists, load it as the
+   browser context's `storageState`. Then `browser_navigate` to the
+   sandbox root.
+2. **Detect login state from the URL, not a screenshot.** Compare the
+   final URL returned by `browser_navigate` against the operator's login
+   pattern (default: ends in `/login`, `/signin`, or `/auth`). If it
+   matches, the session is stale → run the login flow. If it does not,
+   skip ahead.
+3. **Login flow** (recorded once in `~/.helpdesk-writer/flows/login.json`,
+   replayed every time it is needed):
+   - `browser_navigate` → `<SANDBOX_URL>/login`
+   - `browser_fill` on the email field with the configured credential
+   - `browser_fill` on the password field
+   - `browser_click` on the submit button
+   - `browser_wait_for` a URL or element that proves login (dashboard
+     URL pattern, profile menu)
+   - On success, dump the updated storage state back to the cache file.
+4. If the product uses SSO (Google, GitHub, etc.), the user must set up
+   a sandbox account with email/password auth available, or
+   pre-authenticate and hand off a session.
 
-If the product uses SSO (Google, GitHub, etc.), the user must set up a
-sandbox account with email/password auth available, or pre-authenticate
-and hand off a session.
+URL-based detection saves a screenshot's worth of tokens every time the
+session is still valid — which, with the cached state, should be most of
+the time.
 
 ### Two-failure rule
 
@@ -50,10 +67,11 @@ If login fails twice in a row, **stop**. Likely causes:
 - Test account locked (rate limit)
 - Password rotated and config out of date
 - Sandbox is down
-- Selectors changed and the login script is broken
+- Selectors changed and the login flow is broken
 
 Report the symptom to the user and wait for instructions. Do not keep
-retrying.
+retrying. Apply the same two-strikes rule to any other replayed flow —
+see `runtime-state.md`.
 
 ## Browser config defaults
 
@@ -120,9 +138,27 @@ the member receives the invite. Two ways to do this:
 Pick whichever keeps the screenshot sequence readable. If switching mid-flow
 would be confusing, do sequential.
 
+## Recording the trace
+
+While walking through the feature, append each step to
+`drafts/<slug>/trace.json` (schema in `runtime-state.md`). Capture the
+selector, the URL it lived on, the wait condition, and the screenshot
+filename. When the user later asks for the same article in another
+language — or the UI changes and the article needs to be regenerated —
+the trace is replayed instead of being rediscovered.
+
+If a step matches an existing reusable flow (e.g. "go to Settings →
+Integrations" already lives in `flows/`), reference the flow by name in
+the trace step instead of duplicating its actions.
+
 ## Handing off to step 4
 
-For every step that needs an image, save the raw capture to
-`drafts/<slug>/raw/step-NN.png`. Do not annotate inside this step —
-`screenshot-conventions.md` covers framing rules, and step 4 runs the
-annotator over the raw files.
+For every step that needs an image:
+
+1. Save the raw capture to `drafts/<slug>/raw/step-NN-<short>.png`.
+2. Generate a thumb for your own analysis:
+   `python scripts/annotate.py thumbnail --in raw/step-NN-<short>.png --out thumbs/step-NN-<short>.webp`.
+   Read the thumb, not the raw — see `screenshot-conventions.md` for the
+   quality budget.
+3. Do not annotate yet. Step 4 runs the annotator over the raw files and
+   writes the final assets as `.webp`.

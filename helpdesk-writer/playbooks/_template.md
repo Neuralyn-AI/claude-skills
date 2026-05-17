@@ -38,16 +38,27 @@ cite each technical claim from there with `<!-- src: path:line -->`.
 ## Walkthrough in the sandbox
 
 Pre-condition: the operator's sandbox is in the seed state declared in
-`../references/portal-config.md`, and the skill is logged in via Playwright MCP as the
-sandbox account.
+`../references/portal-config.md`, and the skill is logged in via Playwright
+MCP as the sandbox account. Session is restored from
+`~/.helpdesk-writer/state/<sandbox>.json` when present; if the post-navigate
+URL still matches the login pattern, the login flow replays automatically.
+See `../references/runtime-state.md`.
+
+Running this playbook produces `drafts/<slug>/trace.json` alongside the
+screenshots. The trace is what makes the article cheap to regenerate later
+— same playbook + same trace + a new `language` field replays the walk
+without re-exploring the UI.
 
 ### Step 1 — <action>
 
 - Navigate to: `<route>`
 - Wait for: `<element/condition>`
 - Capture: `drafts/<slug>/raw/step-01-<short>.png`
-- Annotation: `<none | red outline on <element> | numbered markers |
-  cropped zoom | composite>`
+- Thumb (auto): `drafts/<slug>/thumbs/step-01-<short>.webp` — the agent
+  reads this, not the raw
+- Annotation → `drafts/<slug>/assets/step-01-<short>.webp`:
+  `<none | red outline on <element> | numbered markers | cropped zoom |
+  composite>`
 - Notes for the article: `<one-line hint to the writer>`
 
 ### Step 2 — <action>
@@ -61,7 +72,7 @@ sandbox account.
 ## Cover image
 
 Source: `<which step's raw capture, or a dedicated capture>`. Crop to
-1280×640 with `annotate.py crop`. Filename: `assets/cover.png`.
+1280×640 with `annotate.py crop`. Filename: `assets/cover.webp`.
 
 ## Article structure
 
@@ -86,7 +97,7 @@ Suggested outline for this playbook:
 
 ### 1. <Short action>
 <lead-in>
-![<alt text>](assets/step-01-<short>.png)
+![<alt text>](assets/step-01-<short>.webp)
 <closing if needed>
 
 ### 2. <Short action>

@@ -81,7 +81,8 @@ helpdesk-writer/
 │   ├── README.md                  # this file — install + usage
 │   ├── code-recon.md              # how to extract truth from a codebase
 │   ├── ui-walkthrough.md          # Playwright MCP + sandbox conventions
-│   ├── screenshot-conventions.md  # framing, naming, annotation types
+│   ├── runtime-state.md           # storage state, reusable flows, per-article trace
+│   ├── screenshot-conventions.md  # framing, naming, annotation types, WebP budget
 │   ├── style-guide.md             # voice rules; per-project overridable
 │   ├── helpdesk-platforms.md      # adapter specs + universal conventions
 │   ├── portal-config.md           # shape of the operator's portal config

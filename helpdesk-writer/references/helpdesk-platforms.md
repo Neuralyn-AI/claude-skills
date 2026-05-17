@@ -45,7 +45,7 @@ The adapter uses these tools:
 |---|---|---|
 | Discover existing article for an update | `chatwoot_list_articles` | Filter by `locale` and `category_slug` |
 | Read current content for diff | `chatwoot_get_article` | Returns full markdown; ADR 0002 of chatwoot-mcp notes that `locale` / `category_id` / `associated_article_id` are absent here — use list to get those |
-| Upload each `assets/*.png` | `chatwoot_upload_attachment` | `data_base64 + filename + content_type` for local files; returns `file_url` to embed in markdown |
+| Upload each `assets/*.webp` | `chatwoot_upload_attachment` | `data_base64 + filename + content_type` (`image/webp`) for local files; returns `file_url` to embed in markdown |
 | Publish a new article | `chatwoot_create_article` | Stem slug; server prepends a timestamp prefix and returns the final slug |
 | Push an update | `chatwoot_update_article` | PATCHes only the fields you pass |
 | Clean up a bad draft | `chatwoot_delete_article` | Optional, irreversible |
@@ -109,10 +109,10 @@ category:
 locale: string              # default from portal config, overridable per article
 status: draft|published|archived
 tags: [string]              # from the operator's tag taxonomy
-cover_image: path           # local path to assets/cover.png
+cover_image: path           # local path to assets/cover.webp
 inline_assets:              # local paths referenced inside content
-  - assets/step-01.png
-  - assets/step-02.png
+  - assets/step-01.webp
+  - assets/step-02.webp
 associated_article: slug?   # if this is a translation of another article
 ```
 
@@ -176,7 +176,7 @@ yet, flag the dependency to the user — do not publish a broken link.
 Image references in the markdown source use **local paths**:
 
 ```markdown
-![dashboard home](assets/step-01-dashboard-home.png)
+![dashboard home](assets/step-01-dashboard-home.webp)
 ```
 
 At publish time, the adapter uploads each asset, gets back a public URL,
