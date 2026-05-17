@@ -64,24 +64,29 @@ traceable evidence — from the code or from the UI.**
 
 ### 1. Briefing
 
-In a single round, gather:
+First, check `playbooks/` for a `.md` whose name or topic matches the
+request. If one exists, follow it instead of starting from scratch —
+playbooks encode the steps, recon hints, and screenshot plan for that
+topic.
 
-- **Article topic and target helpdesk category.** If no portal structure is
-  configured yet (see "Runtime configuration discovery"), also ask the user
-  to describe the portal: categories with slugs, slug conventions, tag
-  taxonomy, URL pattern. Offer to persist this to the portal config file.
-- **Target persona.** Pick from the personas the operator has declared, or
-  ask if none are declared (typical examples: non-technical user, power
-  user, developer integrating).
-- **New article or update?** If update, the existing article ID/slug.
-- **Any missing runtime configuration** — sandbox credentials, repo paths,
-  helpdesk transport choice — that step 2 and step 3 will need. Collect
-  everything in one round; do not interrupt the workflow later to ask for a
-  credential you could have asked for now.
+Then, in a single round, gather:
+
+- **Article topic and target helpdesk category.** If no portal structure
+  is configured yet (see "Runtime configuration discovery"), ask the user
+  to describe the portal using the schema in `references/portal-config.md`
+  (portal identity, categories, tag taxonomy, personas, glossary, output
+  language). Offer to persist the result.
+- **Target persona.** Pick from the personas the operator declared in the
+  portal config; ask if none are declared.
+- **New article or update?** If update, the existing article id or slug.
+- **Any missing runtime configuration** — sandbox credentials, repo
+  paths, helpdesk transport choice — that step 2 and step 3 will need.
+  Collect everything in one round; do not interrupt the workflow later to
+  ask for a credential you could have asked for now.
 
 If the article type is obvious from the request, infer instead of asking.
-Treat secrets carefully: do not echo passwords or tokens back in chat; if you
-must reference them, refer by name.
+Treat secrets carefully: do not echo passwords or tokens back in chat; if
+you must reference them, refer by name.
 
 ### 2. Code recon (read `references/code-recon.md`)
 
@@ -105,8 +110,8 @@ invent**.
 
 ### 3. UI walkthrough (read `references/ui-walkthrough.md` and `references/screenshot-conventions.md`)
 
-Log into the sandbox via Playwright MCP using credentials from the env file.
-For each step of the article outline:
+Log into the sandbox via Playwright MCP using the credentials resolved per
+"Runtime configuration discovery". For each step of the article outline:
 
 - Navigate to the screen
 - Capture a screenshot (full page or specific element, per convention)
@@ -158,8 +163,10 @@ Based on the article type, choose the mode (draft vs. publish directly).
 Before upload, **strip every evidence HTML comment** from the final markdown.
 Those comments are for audit, not for the reader.
 
-Call the configured helpdesk transport (MCP server or HTTP API) with: title,
-slug, category, body (cleaned markdown), meta description, image attachments.
+Call the configured helpdesk transport (MCP server or HTTP API) with the
+canonical payload defined in `references/helpdesk-platforms.md` (title,
+slug, content, category, locale, status, description, tags, cover_image,
+inline_assets, associated_article).
 
 ## Reference files
 
@@ -201,5 +208,7 @@ and as the source for future updates.
 3. **Never publish without human review.** Prior approval does not carry over
    to a new article.
 4. **If code and UI disagree, stop and report.** Do not pick a side.
-5. **Speak the user's language, not the developer's.** The final article must
-   not read like a GitHub issue.
+5. **Never invent.** If a feature has no corresponding code, warn the user
+   instead of speculating.
+6. **Speak the user's language, not the developer's.** The final article
+   must not read like a GitHub issue.
