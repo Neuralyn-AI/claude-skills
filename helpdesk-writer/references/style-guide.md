@@ -207,8 +207,3 @@ Typical examples:
 - No emoji in article body — unless the product UI uses an emoji in the
   literal label, in which case quote it as-is.
 
-## Cover image
-
-Every article has a cover image: a 1280×640 screenshot of the feature's
-main screen, **without annotations**. Details in
-`screenshot-conventions.md`. Filename is always `cover.webp`.

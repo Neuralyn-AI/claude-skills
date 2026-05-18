@@ -35,6 +35,7 @@ provided at runtime.
 
 Execute these steps in order. **Do not skip steps.**
 Hard rule: **no technical claim enters the article without traceable evidence — from the code or from the UI.**
+Hard rule: **never read, search, or use any file on the user's system that is outside the repositories declared in the project config.** This applies to every step of the workflow, without exception.
 
 ---
 
@@ -44,7 +45,9 @@ Use `AskUserQuestion` (dialog) to collect:
 
 - **What the article is about** — free text (e.g. "How to register products").
 - **Article language** — offer choices based on any language already configured
-  in the active project, plus "Other".
+  in the active project. If no project languages are configured yet, offer at
+  least English and "Other" (the `AskUserQuestion` tool requires a minimum of
+  2 options; never pass a single-item list).
 
 Do not ask anything else in this round. Steps 2–3 decide the rest.
 
@@ -65,8 +68,9 @@ Look for a project config file at `~/.helpdesk-writer/projects.json`. Each entry
 }
 ```
 
-**If one or more projects exist** — use `AskUserQuestion` to display them as
-options plus "Create new project". Pre-select the most recently used.
+**If one or more projects exist** — ALWAYS use `AskUserQuestion` to display
+them as options plus "Create new project". Never auto-select a project, even
+if only one exists or one was used most recently.
 
 **If no projects exist, or the user chooses "Create new project"** — run a
 short setup dialog (one `AskUserQuestion` call per question where options help;
@@ -74,8 +78,12 @@ free-text otherwise):
 
 A. Project name (free text).
 B. Git repository paths — one or more local paths, comma-separated.
-C. Sandbox URL + how to supply credentials (env variable name, or the user
-   will paste them now — never log secrets to disk without explicit consent).
+C. Sandbox URL + credentials. Before asking, explain: the sandbox is the
+   live website or app we will navigate to capture screenshots and verify
+   each step of the tutorial. Ask for the URL, login, and password. Always
+   save all of these — including the password — directly to the project
+   config on disk. Sandbox credentials are not production secrets; there is
+   no need to redirect to env variables or warn about storage.
 
 Save the new project to `~/.helpdesk-writer/projects.json` and create its
 working directory at `~/.helpdesk-writer/projects/<slug>/`.
@@ -90,6 +98,9 @@ that directory. Cross-session Playwright storage state lives at
 
 Now that we know the topic, scan only the relevant parts of the repositories.
 
+- **Only read files inside the repositories the user declared in the project
+  config.** Never read files outside those paths, regardless of what imports,
+  paths, or symlinks are encountered.
 - Use the topic from step 1 as a search scope: grep for relevant identifiers,
   routes, schemas, validators, and constants.
 - For each target repo, read its `CLAUDE.md` / `AGENTS.md` if present — these
@@ -112,6 +123,11 @@ the summary first; only re-query the repo if the summary is insufficient.
 Load cached Playwright storage state if it exists. Navigate to the sandbox and
 check the URL: if it matches the login pattern, replay the login flow and save
 the refreshed state.
+
+**The full walkthrough is mandatory.** Even when code recon already provides
+enough information to write the article, every step of the flow must be
+executed in Playwright from start to finish — no skipping. If any step cannot
+be completed, stop immediately and inform the user before proceeding.
 
 For each step of the article outline:
 
@@ -154,6 +170,17 @@ Save processed images as WebP to `drafts/<article-slug>/assets/step-NN-<short>.w
 
 ---
 
+### Step 6b — Screenshots decision
+
+Before writing, use `AskUserQuestion` to ask whether the user wants screenshots
+included in the article. Options: "Yes — capture and annotate screenshots" /
+"No — text only".
+
+If yes, proceed with steps 4 and 6 (UI walkthrough + image post-processing).
+If no, skip steps 4 and 6 entirely and go straight to article writing.
+
+---
+
 ### Step 7 — Article writing  (read `references/style-guide.md`)
 
 Compose the article in the format selected in step 5, following the standard
@@ -172,7 +199,15 @@ Non-negotiable rules:
 
 ### Step 8 — Human review
 
-Show the full draft in chat (rendered article + list of generated screenshots).
+Save the article to `drafts/<article-slug>/article.<ext>` (extension matches
+the format chosen in step 5). Then tell the user where the file is — show only
+the file path, nothing else. **Do not render or print the article content in
+chat.**
+
+Example message:
+
+> Draft saved: `~/.helpdesk-writer/projects/<slug>/drafts/<article-slug>/article.md`
+
 **Never publish.** Wait for explicit approval.
 
 If the user requests changes, redo the relevant steps and show again.

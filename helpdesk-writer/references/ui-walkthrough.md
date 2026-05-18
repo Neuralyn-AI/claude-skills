@@ -79,7 +79,10 @@ Set these on the Playwright context unless the article explicitly requires
 something else:
 
 ```
-viewport:           1280x800
+viewport:           <maximum available screen resolution of the user's OS,
+                     without fullscreen — query via `browser_evaluate` with
+                     `{width: window.screen.availWidth, height: window.screen.availHeight}`
+                     before opening the target URL and apply the result>
 device_scale_factor: 2          # crisp screenshots
 locale:             <article output language>
 timezone:           <operator's choice; UTC is safe>
@@ -88,6 +91,18 @@ color_scheme:       light       # most products document the light theme
 
 If the article documents responsive or mobile behaviour, switch viewport and
 device descriptors for those screens specifically, then switch back.
+
+## Language matching
+
+Before starting the walkthrough, check whether the app's UI language matches
+the article's output language (set in step 1). If they differ:
+
+1. Look for a language switcher — a button, link, dropdown, or flag component
+   anywhere in the UI (header, footer, account settings, profile menu).
+2. If found, switch the UI to the article language before capturing any
+   screenshot.
+3. If no language switcher is found, stop and ask the user how to proceed
+   before continuing. Do not capture screenshots in the wrong language.
 
 ## Test data seed
 
@@ -122,6 +137,9 @@ Even a sandbox can break in ways that hurt later sessions. Avoid:
   endpoints, never production URLs.
 - **Uploading real-person images, files containing real PII, or anything
   the operator has not consented to share in screenshots.**
+- **Choosing a file to upload without asking.** Whenever a flow requires a
+  file upload, ALWAYS stop and ask the user for the file path. Never pick,
+  generate, or assume a file. Wait for the path before proceeding.
 
 When in doubt, ask the user before clicking.
 
@@ -155,10 +173,24 @@ the trace step instead of duplicating its actions.
 
 For every step that needs an image:
 
-1. Save the raw capture to `drafts/<slug>/raw/step-NN-<short>.png`.
-2. Generate a thumb for your own analysis:
+1. **Wait for full load before shooting.** Before taking any screenshot, wait
+   until the page has no pending network requests and is fully rendered — use
+   `browser_wait_for` with `networkidle` or equivalent. Then wait an additional
+   3 seconds to allow animations, lazy renders, and deferred content to settle.
+   Never capture while requests are still in flight.
+2. **Scroll before shooting.** Before taking any screenshot, scroll the page
+   until the element you want to show is fully visible inside the current
+   viewport. Never capture a screenshot that includes content outside the
+   viewport or that requires the reader to imagine off-screen areas.
+3. **Verify the action worked.** After every interaction (click, form submit,
+   file upload, etc.), take a screenshot and read the thumb to confirm the
+   expected outcome is visible — success message, new state, navigation
+   change, etc. If the screenshot does not confirm success, stop and report
+   to the user before continuing.
+4. Save the raw capture to `drafts/<slug>/raw/step-NN-<short>.png`.
+5. Generate a thumb for your own analysis:
    `python scripts/annotate.py thumbnail --in raw/step-NN-<short>.png --out thumbs/step-NN-<short>.webp`.
    Read the thumb, not the raw — see `screenshot-conventions.md` for the
    quality budget.
-3. Do not annotate yet. Step 4 runs the annotator over the raw files and
+6. Do not annotate yet. Step 4 runs the annotator over the raw files and
    writes the final assets as `.webp`.

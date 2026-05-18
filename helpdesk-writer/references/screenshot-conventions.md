@@ -6,6 +6,37 @@ Consistency is what makes the helpdesk feel professional.
 Browser config (viewport, DPR, locale, theme) is in `ui-walkthrough.md`.
 Annotation commands are run by `scripts/annotate.py`.
 
+## Mandatory: wait for full page load before every screenshot
+
+**Never capture a screenshot on a page that is still loading.** Screenshots
+taken mid-load show spinners, skeleton screens, or partially rendered
+layouts — they cannot be used in the article and waste the annotation pass.
+
+Before every `browser_take_screenshot` call:
+
+1. **Wait for all network activity to settle.** Use `browser_wait_for` with a
+   `load` or `networkidle` condition (whichever the Playwright MCP exposes).
+   If neither is available, wait for a stable DOM element that is only visible
+   after the page is fully rendered (e.g. the main heading, the primary data
+   table, or a known UI landmark).
+
+2. **Wait an additional 5 seconds** after the load condition resolves. CSS
+   transitions, deferred JS renders, lazy-loaded images, and chart animations
+   finish in this window.
+
+   ```js
+   // Example sequence (Playwright-style — adapt to the MCP tool names):
+   await page.waitForLoadState('networkidle');
+   await page.waitForTimeout(3000);
+   // NOW take the screenshot
+   ```
+
+3. **Verify the screenshot is clean** by reading the thumb immediately after
+   capture. If any loading indicator is visible, repeat from step 1.
+
+This rule is **mandatory** and applies to every screenshot in every article,
+including cover images, zoom-in crops, and before/after composites.
+
 ## File layout and naming
 
 Inside `drafts/<slug>/`:
@@ -172,6 +203,53 @@ python scripts/annotate.py composite \
 ```
 
 Label both panels so the reader does not have to guess which is which.
+
+## When to annotate (and when not to)
+
+Most screenshots ship clean — no markers, no highlights, no overlays.
+Annotations are only warranted when the article text refers to a **specific
+element by name or position** and the element would be hard to locate without
+visual guidance (e.g. "click the ⋮ icon in the top-right corner of the card").
+
+Do not annotate just because a screenshot exists. When in doubt, leave it clean.
+
+## Mandatory: review every annotated screenshot before saving to assets/
+
+After running any `annotate.py` command that produces a file in `assets/`,
+**read the result and verify it passes all checks below** before moving on.
+If it fails, reposition the annotation and re-run.
+
+### What must remain fully legible
+
+Annotations must never fully cover:
+
+- Input fields and their labels
+- Button labels and icon buttons
+- Section titles and headings
+- Checkboxes, radio buttons, toggles, and switches
+- Any piece of text the reader needs to understand what the screen is and
+  what action to take
+
+**Partial overlap is acceptable** if the element is still identifiable — e.g.
+a number marker clipping the corner of a button is fine as long as the button
+label is readable. Full coverage of the element's text or interactive area
+is not acceptable.
+
+### How to fix an obscured element
+
+1. Identify a corner or edge of the target element that has empty space
+   (padding, margin, adjacent whitespace).
+2. Re-run `annotate.py` with adjusted `--xy` or `--bbox` coordinates so
+   the annotation sits beside or partially overlapping the element without
+   covering its readable content.
+3. Re-read the output and repeat until the check passes.
+
+### The goal
+
+A reader who has never seen the product must be able to look at the annotated
+screenshot and understand the page: what the controls are, what they say, and
+what the annotations are pointing at. If that is not true, the annotation
+placement is wrong.
 
 ## Article cover image
 
