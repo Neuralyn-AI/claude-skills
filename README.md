@@ -4,7 +4,7 @@ A monorepo of Claude Code **skills** maintained by Neuralyn. Each top-level
 directory is one self-contained skill that can be installed independently
 into `~/.claude/skills/<skill-name>/` on any maintainer's machine.
 
-Skills share a common style, release discipline, and language policy — but
+Skills share a common style, release discipline, and language policy - but
 they are not interdependent. You can install one without the others.
 
 ## What is a Claude Code skill?
@@ -57,6 +57,27 @@ for full installation and usage instructions.
 
 ---
 
+### `xquik-twitter-data`
+
+Guides Xquik-backed X/Twitter data workflows for search, profiles, timelines,
+exports, monitoring, webhooks, MCP usage, SDK setup, and confirmation-gated
+write actions. It keeps endpoint choices tied to current operator-supplied
+docs and requires explicit confirmation before any public write action.
+
+**Key features:**
+- Separates read, export, monitor, webhook, MCP, SDK, and write workflows.
+- Requires current Xquik docs before selecting endpoints or request shapes.
+- Pins the optional JavaScript SDK install to a verified package version.
+- Keeps credentials, docs URLs, and repo URLs in operator config, not skill
+  source files.
+
+**Prerequisites:** Xquik API key and operator-supplied Xquik docs URLs.
+
+See [`xquik-twitter-data/references/README.md`](xquik-twitter-data/references/README.md)
+for full installation and usage instructions.
+
+---
+
 ## Repository conventions
 
 | Surface | Language |
@@ -70,7 +91,7 @@ Per-skill layout (every skill follows this structure):
 
 ```
 <skill-name>/
-├── SKILL.md            # entry point — the ONLY .md at the skill root
+├── SKILL.md            # entry point - the ONLY .md at the skill root
 ├── references/         # every other .md the skill points to
 │   └── README.md       # install + usage for end teams
 ├── scripts/            # executables
@@ -85,4 +106,4 @@ Per-skill layout (every skill follows this structure):
 3. Put every other `.md` under `references/`.
 4. Add the skill to the table in `CLAUDE.md` (repo root) and to this README.
 5. Keep all external references (URLs, credentials, repo paths) out of the
-   skill source — those go in the operator's env file.
+   skill source - those go in the operator's env file.
