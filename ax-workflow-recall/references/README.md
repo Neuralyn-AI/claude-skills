@@ -10,7 +10,8 @@ team wants a concise account of the workflow that produced the result.
 # 1. Copy the skill into Claude Code's skills directory
 cp -r ax-workflow-recall ~/.claude/skills/
 
-# 2. Make sure ax or axctl is available
+# 2. Make sure ax is available. If only axctl is on PATH,
+# use axctl in place of ax in the commands below.
 ax --help
 
 # 3. Start the local ax database if it is not already running
@@ -64,6 +65,7 @@ ax-workflow-recall/
 
 ## License note
 
-This wrapper skill is original material contributed under this repository's MIT
-license. It depends on the separate ax project and command-line tool; check the
-ax project for its own license before redistributing ax itself.
+This wrapper skill is original MIT-licensed documentation for using the `ax`
+CLI. It does not copy, vendor, or redistribute ax source code. ax itself is a
+separate AGPL-licensed project; check ax's license before redistributing or
+bundling ax with this skill.

@@ -25,7 +25,8 @@ reconstruction.
 
 ## Expected environment prerequisites
 
-- `ax` or `axctl` is installed and available on `PATH`.
+- `ax` is installed and available on `PATH`; if only `axctl` is available,
+  substitute `axctl` for every `ax` command below.
 - The local ax database is running.
 - Relevant sessions have already been ingested with `ax ingest`.
 - The command is run from the target project when using `here` or commit-scoped
@@ -108,6 +109,7 @@ Use this structure:
 
 ## Licensing note
 
-This is an original wrapper skill contributed under this repository's MIT
-license. It depends on the separate ax project and command-line tool, whose
-source license may differ.
+This wrapper skill is original MIT-licensed documentation for using the `ax`
+CLI. It does not copy, vendor, or redistribute ax source code. ax itself is a
+separate AGPL-licensed project; check ax's license before redistributing or
+bundling ax with this skill.
