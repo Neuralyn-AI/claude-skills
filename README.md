@@ -57,6 +57,29 @@ for full installation and usage instructions.
 
 ---
 
+### `ax-workflow-recall`
+
+Reconstructs how shipped software work happened by querying a local ax graph.
+It anchors on a commit, date, topic, PR, or recent project window, then asks
+Claude Code to inspect the relevant sessions, skills, tool calls, subagents,
+cost signals, and decisions before writing a concise workflow narrative.
+
+**Key features:**
+
+- Turns local agent history into a repeatable "how this shipped" brief.
+- Uses `ax sessions`, `ax recall`, and optional subagent expansion instead of
+  relying on memory.
+- Separates generic recent activity from artifact-specific workflow recall.
+- Keeps all evidence local; value depends on sessions already ingested by ax.
+
+**Prerequisites:** ax/axctl, a running local ax database, and indexed local
+Claude Code, Codex, OpenCode, Cursor, or Pi sessions.
+
+See [`ax-workflow-recall/references/README.md`](ax-workflow-recall/references/README.md)
+for installation and usage instructions.
+
+---
+
 ## Repository conventions
 
 | Surface | Language |
